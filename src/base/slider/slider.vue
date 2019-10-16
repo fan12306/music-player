@@ -15,11 +15,11 @@
 </template>
 
 <script type="text/ecmascript-6">
-import { addClass } from "common/js/dom";
-import BScroll from "better-scroll";
+import { addClass } from 'common/js/dom'
+import BScroll from 'better-scroll'
 
 export default {
-  name: "slider",
+  name: 'slider',
   props: {
     loop: {
       type: Boolean,
@@ -38,47 +38,47 @@ export default {
     return {
       dots: [],
       currentPageIndex: 0
-    };
+    }
   },
   mounted() {
     setTimeout(() => {
-      this._setSliderWidth();
-      this._initDots();
-      this._initSlider();
+      this._setSliderWidth()
+      this._initDots()
+      this._initSlider()
 
       if (this.autoPlay) {
-        this._play();
+        this._play()
       }
-    }, 20);
+    }, 20)
 
-    window.addEventListener("resize", () => {
+    window.addEventListener('resize', () => {
       if (!this.slider) {
-        return;
+        return
       }
-      this._setSliderWidth(true);
-      this.slider.refresh();
-    });
+      this._setSliderWidth(true)
+      this.slider.refresh()
+    })
   },
   beforeDestroy() {
-    clearTimeout(this.timer);
+    clearTimeout(this.timer)
   },
   methods: {
     _setSliderWidth(isResize) {
-      this.children = this.$refs.sliderGroup.children;
+      this.children = this.$refs.sliderGroup.children
 
-      let width = 0;
-      let sliderWidth = this.$refs.slider.clientWidth;
+      let width = 0
+      let sliderWidth = this.$refs.slider.clientWidth
       for (let i = 0; i < this.children.length; i++) {
-        let child = this.children[i];
-        addClass(child, "slider-item");
+        let child = this.children[i]
+        addClass(child, 'slider-item')
 
-        child.style.width = sliderWidth + "px";
-        width += sliderWidth;
+        child.style.width = sliderWidth + 'px'
+        width += sliderWidth
       }
       if (this.loop && !isResize) {
-        width += 2 * sliderWidth;
+        width += 2 * sliderWidth
       }
-      this.$refs.sliderGroup.style.width = width + "px";
+      this.$refs.sliderGroup.style.width = width + 'px'
     },
     _initSlider() {
       this.slider = new BScroll(this.$refs.slider, {
@@ -89,34 +89,34 @@ export default {
           loop: this.loop,
           threshold: 0.3
         }
-      });
+      })
 
-      this.slider.on("scrollEnd", () => {
-        let pageIndex = this.slider.getCurrentPage().pageX;
-        this.currentPageIndex = pageIndex;
+      this.slider.on('scrollEnd', () => {
+        let pageIndex = this.slider.getCurrentPage().pageX
+        this.currentPageIndex = pageIndex
 
         if (this.autoPlay) {
-          this._play();
+          this._play()
         }
-      });
+      })
 
-      this.slider.on("beforeScrollStart", () => {
+      this.slider.on('beforeScrollStart', () => {
         if (this.autoPlay) {
-          clearTimeout(this.timer);
+          clearTimeout(this.timer)
         }
-      });
+      })
     },
     _initDots() {
-      this.dots = new Array(this.children.length);
+      this.dots = new Array(this.children.length)
     },
     _play() {
-      let pageIndex = this.currentPageIndex + 1;
+      let pageIndex = this.currentPageIndex + 1
       this.timer = setTimeout(() => {
-        this.slider.goToPage(pageIndex, 0, 400);
-      }, this.interval);
+        this.slider.goToPage(pageIndex, 0, 400)
+      }, this.interval)
     }
   }
-};
+}
 </script>
 
 <style scoped lang="stylus" rel="stylesheet/stylus">

@@ -20,6 +20,9 @@ const mutations = {
   },
   [types.set_mode] (state, mode) {
     state.mode = mode
+  },
+  [types.set_url](state, newUrl) {
+    state.newUrl = newUrl
   }
 }
 

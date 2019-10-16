@@ -32,13 +32,14 @@
   </div>
 </template>
 
-
 <script>
 import Scroll from "base/scroll/scroll";
 import Songlist from "base/song-list/song-list";
 import { setTimeout } from "timers";
 import Loading from "base/loading/loading";
 import { mapActions } from "vuex";
+import jsonp from "../../common/js/jsonp";
+import { getSongs } from "../../common/js/song";
 
 const RESERVE_HEIGHT = 42;
 export default {
@@ -63,9 +64,12 @@ export default {
   },
   methods: {
     selectItem(item, index) {
-      this.selectPlay({
-        list: this.songs,
-        index
+      getSongs(item).then(res => {
+        this.selectPlay({
+          list: this.songs,
+          index,
+          newUrl: res
+        })
       });
     },
     back() {
@@ -79,6 +83,7 @@ export default {
   created() {
     this.isListenScroll = true;
     this.probeType = 3;
+    this.newUrl = "";
   },
   computed: {
     bgStyle() {
@@ -86,11 +91,10 @@ export default {
     }
   },
   mounted() {
-      this.imageHeight = this.$refs.bgImage.clientHeight;
-      this.mintranslateY = -this.imageHeight + RESERVE_HEIGHT;
-      // 重新计算list的高度
-      this.$refs.songlist.$el.style.top = `${this.imageHeight}px`;
-
+    this.imageHeight = this.$refs.bgImage.clientHeight;
+    this.mintranslateY = -this.imageHeight + RESERVE_HEIGHT;
+    // 重新计算list的高度
+    this.$refs.songlist.$el.style.top = `${this.imageHeight}px`;
   },
   watch: {
     scrollY(newY) {
@@ -112,7 +116,7 @@ export default {
         this.$refs.bgImage.style.height = 0;
         this.$refs.playBtn.style.display = ``;
       }
-        this.$refs.filter.style["backdrop-filter"] = `blur(${blur}px)`;
+      this.$refs.filter.style["backdrop-filter"] = `blur(${blur}px)`;
       if (newY > 0) {
         this.$refs.bgImage.style.transform = `scale(${scale})`;
         zIndex = 10;
@@ -127,7 +131,6 @@ export default {
   }
 };
 </script>
-
 
 <style scoped lang="stylus" rel="stylesheet/stylus">
 @import '~common/stylus/variable';

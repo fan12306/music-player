@@ -199,7 +199,6 @@ export default {
   }
 
   .list-group {
-
     .list-group-title {
       height: 30px;
       line-height: 30px;
@@ -207,8 +206,8 @@ export default {
       font-size: $font-size-small;
       color: $color-text-l;
       background: $color-highlight-background;
-      margin 0;
-      text-align left 
+      margin: 0;
+      text-align: left;
     }
 
     .list-group-item {
@@ -245,7 +244,7 @@ export default {
 
     .ul2 {
       padding: 0;
-      list-style none
+      list-style: none;
     }
 
     .item {
@@ -273,7 +272,7 @@ export default {
       font-size: $font-size-small;
       color: $color-text-l;
       background: $color-highlight-background;
-      text-align left
+      text-align: left;
     }
   }
 

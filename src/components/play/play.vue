@@ -1,11 +1,11 @@
 <template>
-  <div class="player" v-show="playing">
-    <transition 
-    name="normal"
-    @enter='enter'
-    @afrer-enter='afterEnter'
-    @leave='leave'
-    @after-leave='afterLeave'
+  <div class="player">
+    <transition
+      name="normal"
+      @enter="enter"
+      @afrer-enter="afterEnter"
+      @leave="leave"
+      @after-leave="afterLeave"
     >
       <div class="normal-player" v-if="fullScreen">
         <img :src="currentSong.image" class="background" />
@@ -19,7 +19,7 @@
         <div class="middle">
           <div class="middle-l">
             <div class="cd-wrapper" ref="cdWrapper">
-              <div class="cd">
+              <div :class="['cd', rotateing]">
                 <img :src="currentSong.image" class="image" ref="normalImg" />
               </div>
             </div>
@@ -27,22 +27,32 @@
         </div>
         <div class="bottom">
           <div class="progress-wrapper">
-            <span class="time time-l"></span>
-            <div class="progress-bar-wrapper"></div>
-            <span class="time time-r"></span>
+            <span class="time time-l">{{ currentTime }}</span>
+            <div class="progress-bar-wrapper" @click="clickProgress" ref="progressWrapper">
+              <div class="progress-bar" ref="progressBar">
+                <span
+                  id="ball"
+                  ref="ball"
+                  @touchstart="touchStart"
+                  @touchmove="touchMove"
+                  @touchend="touchEnd"
+                ></span>
+              </div>
+            </div>
+            <span class="time time-r">{{ formatDuration(currentSong.duration) }}</span>
           </div>
           <div class="operators">
             <div class="icon i-left">
-              <i class="icon-playlist"></i>
+              <i class="icon-playlist" :class="modeChange" @click="changeMode"></i>
             </div>
             <div class="icon i-left">
-              <i class="icon-prev"></i>
+              <i class="icon-prev" @click="prev"></i>
             </div>
             <div class="icon i-center">
-              <i class="icon-play"></i>
+              <i :class="changeStyle" @click="togglePlay" ref="playingBtn"></i>
             </div>
             <div class="icon icon-right">
-              <i class="icon-next"></i>
+              <i class="icon-next" @click="next"></i>
             </div>
             <div class="icon i-right">
               <i class="icon-not-favorite"></i>
@@ -51,17 +61,24 @@
         </div>
       </div>
     </transition>
+    <audio :src="newUrl" @autoplay="autoPlay" @timeupdate="updateTime" @ended="endSong" ref="audio"></audio>
     <transition name="mini">
-      <div class="mini-player" v-if="!fullScreen" @click="upList">
+      <div
+        class="mini-player"
+        v-if="(Object.keys(currentSong).length === 0 ? false : true) && !fullScreen"
+        @click="upList"
+      >
         <div class="icon" ref="icon">
-          <img :src="currentSong.image" ref="img" />
+          <img :src="currentSong.image" ref="img" :class="rotateing" />
         </div>
         <div class="text">
           <span class="name">{{currentSong.name}}</span>
           <span class="desc">{{currentSong.singer}}</span>
         </div>
         <div class="control">
-          <i class="icon-mini"></i>
+          <circle-loop :radius='radius' :percent="percent">
+            <i :class="['icon-mini', changeMiniStyle]" @click.stop="togglePlay"></i>
+          </circle-loop>
         </div>
         <div class="control">
           <i class="icon-playlist"></i>
@@ -73,14 +90,49 @@
 
 <script>
 import { mapGetters, mapMutations } from "vuex";
-import animations from 'create-keyframe-animation'
+import animations from "create-keyframe-animation";
+import { getSongs } from "../../common/js/song";
+import circleLoop from 'base/circle-loop/circle-loop'
+import {playMode} from '../../common/js/config'
+import shufflefy from 'shufflefy'
 export default {
+  data() {
+    return {
+      currentTime: 0.0,
+      nonFormatTime: 0.0,
+      radius: "0.64rem",
+      percent: 0
+    };
+  },
   computed: {
-    ...mapGetters(["playing", "fullScreen", "singer", "currentSong"])
+    ...mapGetters([
+      "playing",
+      "fullScreen",
+      "singer",
+      "currentSong",
+      "currentIndex",
+      "playlist",
+      "newUrl",
+      "mode",
+      "sequenceList"
+    ]),
+    changeStyle() {
+      return this.playing ? "icon-pause" : "icon-play";
+    },
+    rotateing() {
+      //必须两个类名同时存在才不会重置图片的旋转位置
+      return this.playing ? "play" : "pause" + " " + "play";
+    },
+    changeMiniStyle() {
+      return this.playing ? "icon-pause-mini" : "icon-play-mini";
+    },
+    modeChange() {
+      return this.mode === 0 ? 'icon-sequence' : (this.mode === 1 ? 'icon-loop' : 'icon-random')
+    }
   },
   methods: {
     enter(el, done) {
-      let {x, y, scale} = this.getPosAndScale()
+      let { x, y, scale } = this.getPosAndScale();
       let animation = {
         0: {
           transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`
@@ -91,31 +143,31 @@ export default {
         100: {
           transform: `translate3d(0, 0, 0) scale(1)`
         }
-      }
+      };
       animations.registerAnimation({
-        name: 'move',
+        name: "move",
         animation,
         presets: {
           duration: 600,
-          easing: 'linear'
+          easing: "linear"
         }
-      })
+      });
 
-      animations.runAnimation(this.$refs.cdWrapper, 'move', done)
+      animations.runAnimation(this.$refs.cdWrapper, "move", done);
     },
     afterEnter() {
-      animations.unregisterAnimation('move')
-      this.$refs.cdWrapper.style.animation= ''
+      animations.unregisterAnimation("move");
+      this.$refs.cdWrapper.style.animation = "";
     },
     leave(el, done) {
-      this.$refs.cdWrapper.style.transition = `all 0.5s `
-      let {x, y, scale} = this.getPosAndScale()
-      this.$refs.cdWrapper.style['transform'] = `translate3d(${x}px, ${y}px, 0) scale(${scale})`
-      this.$refs.cdWrapper.addEventListener('transitionend', done())
+      this.$refs.cdWrapper.style.transition = `all 5s ease`;
+      let { x, y, scale } = this.getPosAndScale();
+      this.$refs.cdWrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
+      this.$refs.cdWrapper.addEventListener("transitionend", done());
     },
     afterLeave() {
-      this.$refs.cdWrapper.style.transition = ''
-      this.$refs.cdWrapper.style['transform'] = ''
+      this.$refs.cdWrapper.style.transition = "";
+      this.$refs.cdWrapper.style["transform"] = "";
     },
     downList() {
       this.setFullScreen(false);
@@ -124,19 +176,151 @@ export default {
       this.setFullScreen(true);
     },
     getPosAndScale() {
-      const miniWidth = 40
-      const paddingLeft = 40
-      const paddingBottom = 30
-      const paddingTop = 80
-      const width = window.innerWidth * 0.8
-      const scale = miniWidth / width
-      const x = -(width-2 * paddingLeft ) / 2
-      const y = window.innerHeight-paddingTop - width/2 - paddingBottom
-      return {x, y, scale}
+      const miniWidth = 40;
+      const paddingLeft = 40;
+      const paddingBottom = 30;
+      const paddingTop = 80;
+      const width = window.innerWidth * 0.8;
+      const scale = miniWidth / width;
+      const x = -(width - 2 * paddingLeft) / 2;
+      const y = window.innerHeight - paddingTop - width / 2 - paddingBottom;
+      return { x, y, scale };
+    },
+    togglePlay() {
+      this.setPlaying(!this.playing);
+      if (this.playing) {
+        this.$refs.audio.play();
+      } else {
+        this.$refs.audio.pause();
+      }
+    },
+    autoPlay() {
+      this.$nextTick(() => {
+        this.$refs.audio.play();
+      });
+    },
+    prev() {
+      this.setCurrentIndex(this.currentIndex - 1);
+      if (this.currentIndex <= 0) {
+        this.setCurrentIndex(this.playlist.length - 1);
+      }
+      getSongs(this.currentSong).then(res => {
+        this.setUrl(res);
+      });
+      setTimeout(() => {
+        this.setPlaying(true);
+      });
+    },
+    next() {
+      this.setCurrentIndex(this.currentIndex + 1);
+      if (this.currentIndex > this.playlist.length - 1) {
+        this.setCurrentIndex(1);
+      }
+      getSongs(this.currentSong).then(res => {
+        this.setUrl(res);
+        setTimeout(() => {
+          this.$refs.audio.play();
+        });
+      });
+    },
+    clickProgress(e) {
+      const startPos = this.$refs.progressWrapper.getBoundingClientRect().left;
+      let progressBarWidth = this.$refs.progressWrapper.clientWidth;
+      let percent = (e.clientX - startPos) / progressBarWidth;
+      let duration = this.currentSong.duration;
+      this.nonFormatTime = percent * duration;
+      this.$refs.audio.currentTime = percent * duration;
+    },
+    touchStart() {
+      this.$refs.audio.pause();
+    },
+    touchMove(e) {
+      this.moveItem.endPoint = e.changedTouches[0].clientX 
+      let progressBarWidth = this.$refs.progressWrapper.clientWidth;
+      const startPos = this.$refs.progressWrapper.getBoundingClientRect().left;
+      let percent = (this.moveItem.endPoint - startPos) / progressBarWidth
+      this.movingBall(percent)
+    },
+    touchEnd(e) {
+      this.$refs.audio.play();
+      let endPos = e.changedTouches[0].clientX
+      const startPos = this.$refs.progressWrapper.getBoundingClientRect().left;
+      const progressBarWidth = this.$refs.progressWrapper.clientWidth
+      let percent = (endPos - startPos) / progressBarWidth
+      this.movingBall(percent)
+    },
+    updateTime() {
+      this.currentTime = this.formatDuration(this.$refs.audio.currentTime);
+      this.nonFormatTime = this.$refs.audio.currentTime;
+    },
+    formatDuration(t) {
+      let clock = (t / 60) | 0;
+      let second = (t - clock * 60) | 0;
+      if (second < 10) {
+        second = `0${second}`;
+      }
+      return `${clock}:${second}`;
+    },
+    movingBall(percent) {
+      let duration = this.currentSong.duration;
+      this.$refs.audio.currentTime = percent * duration;
+      this.nonFormatTime = percent * this.currentSong.duration
+    },
+    endSong() {
+      if(this.mode === 0) {
+        this.next()
+      } else if(this.mode === 1) {
+        this.$refs.audio.currentTime = 0
+        this.$refs.audio.play()
+      }else {
+        shufflefy(this.sequenceList)
+        console.log(shufflefy(this.sequenceList))
+      }
+      
+    },
+    changeMode() {
+      let count = this.mode
+      count += 1 
+      this.setMode(count % 3)
     },
     ...mapMutations({
-      setFullScreen: "set_fullScreen"
+      setFullScreen: "set_fullScreen",
+      setPlaying: "set_playing",
+      setCurrentIndex: "currentIndex",
+      setUrl: "set_url",
+      setMode: "set_mode"
     })
+  },
+  mounted() {
+    this.moveItem = {}
+  },
+  watch: {
+    nonFormatTime(newTime) {
+      let percent = newTime  / this.currentSong.duration;
+      let Width = percent * 100
+      this.percent = percent
+      if (this.fullScreen) {
+      const progressBar = this.$refs.progressWrapper.clientWidth;
+      let count = progressBar * percent ;
+        this.$refs.progressBar.style.width = `${Width}%`;
+        this.$refs.ball.style.left = `${count}px`;
+      }
+    },
+    playing(newValue) {
+      this.$nextTick(() => {
+        if (newValue) {
+          this.$refs.audio.play();
+        } else {
+          this.$refs.audio.pause();
+        }
+      });
+    },
+    percent(newPercent) {
+      return this.percent = newPercent
+    }
+  },
+  components: {
+    circleLoop
   }
 };
 </script>
@@ -247,6 +431,7 @@ export default {
             }
 
             &.pause {
+              -webkit-animation-play-state: running;
               animation-play-state: paused;
             }
 
@@ -353,6 +538,29 @@ export default {
 
         .progress-bar-wrapper {
           flex: 1;
+          width: 100%;
+          height: 0.5em;
+          background-color: $color-theme-d;
+
+          .progress-bar {
+            height: 0.4em;
+            background-color: $color-theme;
+            position: relative;
+          }
+
+          #ball {
+            position: absolute;
+            top: 0;
+            left: 50px;
+            right: 0;
+            bottom: 0;
+            margin: auto 0;
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            border-radius: 50%;
+            background-color: $color-theme;
+          }
         }
       }
 
@@ -485,6 +693,9 @@ export default {
       flex: 0 0 30px;
       width: 30px;
       padding: 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content center;
 
       .icon-play-mini, .icon-pause-mini, .icon-playlist {
         font-size: 30px;
@@ -493,9 +704,8 @@ export default {
 
       .icon-mini {
         font-size: 32px;
-        position: absolute;
-        left: 0;
-        top: 0;
+        display: flex;
+        align-items: center;
       }
     }
   }

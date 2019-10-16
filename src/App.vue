@@ -10,17 +10,17 @@
 </template>
 
 <script>
-import MHeader from "./components/m-header/m-header";
-import TabBar from "./components/tab/tab";
+import MHeader from './components/m-header/m-header'
+import TabBar from './components/tab/tab'
 import Play from './components/play/play'
 export default {
-  name: "App",
+  name: 'App',
   components: {
     MHeader,
     TabBar,
     Play
   }
-};
+}
 </script>
 
 <style>

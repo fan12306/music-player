@@ -12,3 +12,4 @@ export const set_mode = 'set_mode'
 
 export const set_playing = 'set_playing'
 
+export const set_url = 'set_url'

@@ -7,7 +7,8 @@ const state = {
   currentIndex: -1,
   playlist: {},
   sequenceList: {},
-  mode: playMode.sequence
+  mode: playMode.sequence,
+  newUrl: ''
 }
 
 export default state

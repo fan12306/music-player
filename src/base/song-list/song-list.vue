@@ -9,20 +9,20 @@
 
 <script>
 export default {
-    props: {
-        songs: {
-            type: Array,
-            default: []
-        }
-    },
-    methods: {
-        getDesc(song) {
-            return `${song.singer} --- ${song.album}`
-        },
-        selectItem(item, index) {
-            this.$emit('select', item, index)
-        }
+  props: {
+    songs: {
+      type: Array,
+      default: []
     }
+  },
+  methods: {
+    getDesc(song) {
+      return `${song.singer} --- ${song.album}`
+    },
+    selectItem(item, index) {
+      this.$emit('select', item, index)
+    }
+  }
 }
 </script>
 

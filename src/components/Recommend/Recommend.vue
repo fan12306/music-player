@@ -35,54 +35,54 @@
 </template>
 
 <script type="text/ecmascript-6">
-import Slider from "base/slider/slider";
-import Loading from "base/loading/loading";
-import Scroll from "base/scroll/scroll";
-import { getRecommend, getDiscList } from "api/recommend";
-import { ERR_OK } from "api/config";
-import { mapMutations } from "vuex";
+import Slider from 'base/slider/slider'
+import Loading from 'base/loading/loading'
+import Scroll from 'base/scroll/scroll'
+import { getRecommend, getDiscList } from 'api/recommend'
+import { ERR_OK } from 'api/config'
+import { mapMutations } from 'vuex'
 
 export default {
   data() {
     return {
       recommends: [],
       discList: []
-    };
+    }
   },
   created() {
-    this._getRecommend();
+    this._getRecommend()
 
-    this._getDiscList();
+    this._getDiscList()
   },
   methods: {
     loadImage() {
       if (!this.checkloaded) {
-        this.checkloaded = true;
-        this.$refs.scroll.refresh();
+        this.checkloaded = true
+        this.$refs.scroll.refresh()
       }
     },
     selectItem(item) {
       this.$router.push({
         path: `/recommend/${item.dissid}`
-      });
-      this.setDisc(item);
+      })
+      this.setDisc(item)
     },
     _getRecommend() {
       getRecommend().then(res => {
         if (res.code === ERR_OK) {
-          this.recommends = res.data.slider;
+          this.recommends = res.data.slider
         }
-      });
+      })
     },
     _getDiscList() {
       getDiscList().then(res => {
         if (res.code === ERR_OK) {
-          this.discList = res.data.list;
+          this.discList = res.data.list
         }
-      });
+      })
     },
     ...mapMutations({
-      setDisc: "SET_DISC"
+      setDisc: 'SET_DISC'
     })
   },
   components: {
@@ -90,7 +90,7 @@ export default {
     Loading,
     Scroll
   }
-};
+}
 </script>
 
 <style scoped lang="stylus" rel="stylesheet/stylus">

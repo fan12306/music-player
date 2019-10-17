@@ -7,7 +7,7 @@
       @leave="leave"
       @after-leave="afterLeave"
     >
-      <div class="normal-player" v-if="fullScreen">
+      <scroll class="normal-player" v-if="fullScreen">
         <img :src="currentSong.image" class="background" />
         <div class="top">
           <div class="back" @click="downList">
@@ -23,9 +23,16 @@
                 <img :src="currentSong.image" class="image" ref="normalImg" />
               </div>
             </div>
+            <div class="playing-lyric-wrapper">
+              <div class="playing-lyric" @click='goLyric'>sdfdsfd</div>
+            </div>
           </div>
         </div>
+      
         <div class="bottom">
+          <div class="dot-wrapper">
+            <span class="dot"></span>
+          </div>
           <div class="progress-wrapper">
             <span class="time time-l">{{ currentTime }}</span>
             <div class="progress-bar-wrapper" @click="clickProgress" ref="progressWrapper">
@@ -59,7 +66,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </scroll>
     </transition>
     <audio :src="newUrl" @autoplay="autoPlay" @timeupdate="updateTime" @ended="endSong" ref="audio"></audio>
     <transition name="mini">
@@ -76,7 +83,7 @@
           <span class="desc">{{currentSong.singer}}</span>
         </div>
         <div class="control">
-          <circle-loop :radius='radius' :percent="percent">
+          <circle-loop :radius="radius" :percent="percent">
             <i :class="['icon-mini', changeMiniStyle]" @click.stop="togglePlay"></i>
           </circle-loop>
         </div>
@@ -92,15 +99,16 @@
 import { mapGetters, mapMutations } from "vuex";
 import animations from "create-keyframe-animation";
 import { getSongs } from "../../common/js/song";
-import circleLoop from 'base/circle-loop/circle-loop'
-import {playMode} from '../../common/js/config'
-import shufflefy from 'shufflefy'
+import circleLoop from "base/circle-loop/circle-loop";
+import { playMode } from "../../common/js/config";
+import { shuffle } from "../../common/js/util";
+import scroll from 'base/scroll/scroll'
 export default {
   data() {
     return {
       currentTime: 0.0,
       nonFormatTime: 0.0,
-      radius: "0.64rem",
+      radius: "32",
       percent: 0
     };
   },
@@ -127,7 +135,11 @@ export default {
       return this.playing ? "icon-pause-mini" : "icon-play-mini";
     },
     modeChange() {
-      return this.mode === 0 ? 'icon-sequence' : (this.mode === 1 ? 'icon-loop' : 'icon-random')
+      return this.mode === 0
+        ? "icon-sequence"
+        : this.mode === 1
+        ? "icon-loop"
+        : "icon-random";
     }
   },
   methods: {
@@ -204,24 +216,14 @@ export default {
       if (this.currentIndex <= 0) {
         this.setCurrentIndex(this.playlist.length - 1);
       }
-      getSongs(this.currentSong).then(res => {
-        this.setUrl(res);
-      });
-      setTimeout(() => {
-        this.setPlaying(true);
-      });
+      this.getSongUrl(this.currentIndex);
     },
     next() {
       this.setCurrentIndex(this.currentIndex + 1);
       if (this.currentIndex > this.playlist.length - 1) {
         this.setCurrentIndex(1);
       }
-      getSongs(this.currentSong).then(res => {
-        this.setUrl(res);
-        setTimeout(() => {
-          this.$refs.audio.play();
-        });
-      });
+      this.getSongUrl(this.currentSong);
     },
     clickProgress(e) {
       const startPos = this.$refs.progressWrapper.getBoundingClientRect().left;
@@ -235,19 +237,19 @@ export default {
       this.$refs.audio.pause();
     },
     touchMove(e) {
-      this.moveItem.endPoint = e.changedTouches[0].clientX 
+      this.moveItem.endPoint = e.changedTouches[0].clientX;
       let progressBarWidth = this.$refs.progressWrapper.clientWidth;
       const startPos = this.$refs.progressWrapper.getBoundingClientRect().left;
-      let percent = (this.moveItem.endPoint - startPos) / progressBarWidth
-      this.movingBall(percent)
+      let percent = (this.moveItem.endPoint - startPos) / progressBarWidth;
+      this.movingBall(percent);
     },
     touchEnd(e) {
       this.$refs.audio.play();
-      let endPos = e.changedTouches[0].clientX
+      let endPos = e.changedTouches[0].clientX;
       const startPos = this.$refs.progressWrapper.getBoundingClientRect().left;
-      const progressBarWidth = this.$refs.progressWrapper.clientWidth
-      let percent = (endPos - startPos) / progressBarWidth
-      this.movingBall(percent)
+      const progressBarWidth = this.$refs.progressWrapper.clientWidth;
+      let percent = (endPos - startPos) / progressBarWidth;
+      this.movingBall(percent);
     },
     updateTime() {
       this.currentTime = this.formatDuration(this.$refs.audio.currentTime);
@@ -264,44 +266,62 @@ export default {
     movingBall(percent) {
       let duration = this.currentSong.duration;
       this.$refs.audio.currentTime = percent * duration;
-      this.nonFormatTime = percent * this.currentSong.duration
+      this.nonFormatTime = percent * this.currentSong.duration;
     },
     endSong() {
-      if(this.mode === 0) {
+      if (this.mode === playMode.sequence) {
+        // 直接是顺序歌单，直接播放下一首
+        this.setPlaylist(this.playlist)
+        this.next();
+      } else if (this.mode === playMode.loop) {
+        //循环的时候，顺序歌单，直接将这首歌的currentTime设置为0，并且播放
+        this.setPlaylist(this.playlist)
+        this.$refs.audio.currentTime = 0;
+        this.$refs.audio.play();
+      } else if (this.mode === playMode.random) {
+        //乱序的时候，打乱歌曲的顺序，接着播放下一首
+        let newArr = shuffle(this.playlist)
+        this.setPlaylist(newArr)
         this.next()
-      } else if(this.mode === 1) {
-        this.$refs.audio.currentTime = 0
-        this.$refs.audio.play()
-      }else {
-        shufflefy(this.sequenceList)
-        console.log(shufflefy(this.sequenceList))
       }
-      
     },
     changeMode() {
-      let count = this.mode
-      count += 1 
-      this.setMode(count % 3)
+      let count = this.mode;
+      count += 1;
+      let newMode = count % 3;
+      this.setMode(newMode);
+    },
+    getSongUrl(item) {
+      getSongs(item).then(res => {
+        this.setUrl(res);
+        setTimeout(() => {
+          this.$refs.audio.play();
+        });
+      });
+    },
+    goLyric(mid) {
+      this.$router.push({path: `/singer/${this.currentSong.mid}`})
     },
     ...mapMutations({
       setFullScreen: "set_fullScreen",
       setPlaying: "set_playing",
       setCurrentIndex: "currentIndex",
       setUrl: "set_url",
-      setMode: "set_mode"
+      setMode: "set_mode",
+      setPlaylist: "set_playlist"
     })
   },
   mounted() {
-    this.moveItem = {}
+    this.moveItem = {};
   },
   watch: {
     nonFormatTime(newTime) {
-      let percent = newTime  / this.currentSong.duration;
-      let Width = percent * 100
-      this.percent = percent
+      let percent = newTime / this.currentSong.duration;
+      let Width = percent * 100;
+      this.percent = percent;
       if (this.fullScreen) {
-      const progressBar = this.$refs.progressWrapper.clientWidth;
-      let count = progressBar * percent ;
+        const progressBar = this.$refs.progressWrapper.clientWidth;
+        let count = progressBar * percent;
         this.$refs.progressBar.style.width = `${Width}%`;
         this.$refs.ball.style.left = `${count}px`;
       }
@@ -316,11 +336,12 @@ export default {
       });
     },
     percent(newPercent) {
-      return this.percent = newPercent
+      return (this.percent = newPercent);
     }
   },
   components: {
-    circleLoop
+    circleLoop,
+    scroll
   }
 };
 </script>
@@ -695,7 +716,7 @@ export default {
       padding: 0 10px;
       display: flex;
       align-items: center;
-      justify-content center;
+      justify-content: center;
 
       .icon-play-mini, .icon-pause-mini, .icon-playlist {
         font-size: 30px;

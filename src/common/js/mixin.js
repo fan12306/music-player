@@ -1,6 +1,6 @@
 import {mapGetters, mapMutations, mapActions} from 'vuex'
 import {playMode} from 'common/js/config'
-// import {shuffle} from 'common/js/util'
+import {shuffle} from 'common/js/util'
 
 export const playlistMixin = {
   computed: {
@@ -45,7 +45,7 @@ export const playerMixin = {
       this.setPlayMode(mode)
       let list = null
       if (mode === playMode.random) {
-        // list = shuffle(this.sequenceList)
+        list = shuffle(this.sequenceList)
       } else {
         list = this.sequenceList
       }

@@ -36,6 +36,10 @@ export default {
     refreshDelay: {
       type: Number,
       default: 20
+    },
+    scrollY: {
+      type: Boolean,
+      defalut: false
     }
   },
   mounted() {

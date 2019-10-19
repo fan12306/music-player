@@ -7,16 +7,16 @@
       @leave="leave"
       @after-leave="afterLeave"
     >
-      <scroll class="normal-player" v-if="fullScreen">
+      <div class="normal-player" v-if="fullScreen">
         <img :src="currentSong.image" class="background" />
-        <div class="top">
+        <div class="top" ref="top">
           <div class="back" @click="downList">
             <i class="icon-back"></i>
           </div>
           <h2 class="title">{{currentSong.name}}</h2>
           <h1 class="subTitle">{{currentSong.singer}}</h1>
         </div>
-        <div class="middle">
+        <div class="middle" v-if="isLyric">
           <div class="middle-l">
             <div class="cd-wrapper" ref="cdWrapper">
               <div :class="['cd', rotateing]">
@@ -24,11 +24,11 @@
               </div>
             </div>
             <div class="playing-lyric-wrapper">
-              <div class="playing-lyric" @click='goLyric'>sdfdsfd</div>
+              <div class="playing-lyric" @click="goLyric">asds</div>
             </div>
           </div>
         </div>
-      
+        <Lyric v-else :mid='this.currentSong.mid' :percent="percent"></Lyric>
         <div class="bottom">
           <div class="dot-wrapper">
             <span class="dot"></span>
@@ -66,7 +66,7 @@
             </div>
           </div>
         </div>
-      </scroll>
+      </div>
     </transition>
     <audio :src="newUrl" @autoplay="autoPlay" @timeupdate="updateTime" @ended="endSong" ref="audio"></audio>
     <transition name="mini">
@@ -102,14 +102,16 @@ import { getSongs } from "../../common/js/song";
 import circleLoop from "base/circle-loop/circle-loop";
 import { playMode } from "../../common/js/config";
 import { shuffle } from "../../common/js/util";
-import scroll from 'base/scroll/scroll'
+import scroll from "base/scroll/scroll";
+import Lyric from "../lyric/lyric"
 export default {
   data() {
     return {
       currentTime: 0.0,
       nonFormatTime: 0.0,
       radius: "32",
-      percent: 0
+      percent: 0,
+      isLyric: true
     };
   },
   computed: {
@@ -144,6 +146,10 @@ export default {
   },
   methods: {
     enter(el, done) {
+      if(!this.$refs.cdWrapper) {
+        return 
+      }
+      console.log('enter')
       let { x, y, scale } = this.getPosAndScale();
       let animation = {
         0: {
@@ -168,16 +174,27 @@ export default {
       animations.runAnimation(this.$refs.cdWrapper, "move", done);
     },
     afterEnter() {
+      if(!this.$refs.cdWrapper) {
+        return 
+      }
+      console.log("afterEnter")
       animations.unregisterAnimation("move");
       this.$refs.cdWrapper.style.animation = "";
     },
     leave(el, done) {
+      if(!this.$refs.cdWrapper) {
+        return 
+      }
+      console.log('leave')
       this.$refs.cdWrapper.style.transition = `all 5s ease`;
       let { x, y, scale } = this.getPosAndScale();
       this.$refs.cdWrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
       this.$refs.cdWrapper.addEventListener("transitionend", done());
     },
     afterLeave() {
+      if(this.$refs.cdWrapper) {
+        return 
+      }
       this.$refs.cdWrapper.style.transition = "";
       this.$refs.cdWrapper.style["transform"] = "";
     },
@@ -271,18 +288,18 @@ export default {
     endSong() {
       if (this.mode === playMode.sequence) {
         // 直接是顺序歌单，直接播放下一首
-        this.setPlaylist(this.playlist)
+        this.setPlaylist(this.playlist);
         this.next();
       } else if (this.mode === playMode.loop) {
         //循环的时候，顺序歌单，直接将这首歌的currentTime设置为0，并且播放
-        this.setPlaylist(this.playlist)
+        this.setPlaylist(this.playlist);
         this.$refs.audio.currentTime = 0;
         this.$refs.audio.play();
       } else if (this.mode === playMode.random) {
         //乱序的时候，打乱歌曲的顺序，接着播放下一首
-        let newArr = shuffle(this.playlist)
-        this.setPlaylist(newArr)
-        this.next()
+        let newArr = shuffle(this.playlist);
+        this.setPlaylist(newArr);
+        this.next();
       }
     },
     changeMode() {
@@ -299,8 +316,8 @@ export default {
         });
       });
     },
-    goLyric(mid) {
-      this.$router.push({path: `/singer/${this.currentSong.mid}`})
+    goLyric() {
+      return this.isLyric = ! this.isLyric
     },
     ...mapMutations({
       setFullScreen: "set_fullScreen",
@@ -337,11 +354,20 @@ export default {
     },
     percent(newPercent) {
       return (this.percent = newPercent);
+    },
+    currentSong(newSong, oldSong) {
+      //监听播放的歌，如果歌曲不同那就从新开始播放
+      if(!oldSong.id === newSong.id) {
+        return 
+      }else {
+        this.getSongUrl(newSong)
+      }
     }
   },
   components: {
     circleLoop,
-    scroll
+    scroll,
+    Lyric
   }
 };
 </script>

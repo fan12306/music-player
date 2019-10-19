@@ -1,4 +1,4 @@
-import jsonp from "./jsonp"
+import jsonp from './jsonp'
 
 export default class Song {
   constructor({
@@ -47,9 +47,9 @@ function filterSinger(singer) {
   return ret.join('/')
 }
 
-export function getSongs(item) {
+export function getSongs(item) { // 获取歌曲的url
   return jsonp(item.url).then((res) => {
-    let url = `${res.req_0.data.sip[0]}${res.req_0.data.midurlinfo[0].purl}`
+    let url = `${res.req_0.data.sip[0]}${res.req_0.data.midurlinfo[0].purl}`  
     return url
   })
 }

@@ -74,6 +74,22 @@ const devWebpackConfig = merge(baseWebpackConfig, {
         }).catch((e) => {
           console.log(e)
         })
+      }),
+      app.get('/api/lyric', function(req, res) {
+        console.log('收到/api/lyric 请求')
+        let url = 'https://szc.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg'
+        axios.get(url, {
+          headers: {
+            referer: 'https://y.qq.com/',
+            host: 'c.y.qq.com'
+          },
+          params: req.query
+        }).then((response) => {
+          console.log('response',response.data.lyric)
+          res.json(response.data)
+        }).catch((e) => {
+          console.log(e)
+        })
       })
     }
   },

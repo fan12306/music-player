@@ -28,7 +28,7 @@
             </div>
           </div>
         </div>
-        <Lyric v-else :mid='this.currentSong.mid' :percent="percent"></Lyric>
+        <Lyric v-else :mid='this.currentSong.mid' :time="newTime" ></Lyric>
         <div class="bottom">
           <div class="dot-wrapper">
             <span class="dot"></span>
@@ -111,7 +111,8 @@ export default {
       nonFormatTime: 0.0,
       radius: "32",
       percent: 0,
-      isLyric: true
+      isLyric: true,
+      newTime: 0
     };
   },
   computed: {
@@ -149,7 +150,6 @@ export default {
       if(!this.$refs.cdWrapper) {
         return 
       }
-      console.log('enter')
       let { x, y, scale } = this.getPosAndScale();
       let animation = {
         0: {
@@ -177,7 +177,6 @@ export default {
       if(!this.$refs.cdWrapper) {
         return 
       }
-      console.log("afterEnter")
       animations.unregisterAnimation("move");
       this.$refs.cdWrapper.style.animation = "";
     },
@@ -185,7 +184,6 @@ export default {
       if(!this.$refs.cdWrapper) {
         return 
       }
-      console.log('leave')
       this.$refs.cdWrapper.style.transition = `all 5s ease`;
       let { x, y, scale } = this.getPosAndScale();
       this.$refs.cdWrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
@@ -334,6 +332,7 @@ export default {
   watch: {
     nonFormatTime(newTime) {
       let percent = newTime / this.currentSong.duration;
+      this.newTime = newTime
       let Width = percent * 100;
       this.percent = percent;
       if (this.fullScreen) {
